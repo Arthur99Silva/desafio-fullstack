@@ -1,0 +1,38 @@
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="logo">
+      <h2>
+        <span class="material-icons">dashboard</span>
+        Gestão
+      </h2>
+      <span>Empresas e Fornecedores</span>
+    </div>
+
+    <nav>
+      <a routerLink="/empresas" routerLinkActive="active">
+        <span class="material-icons nav-icon">business</span>
+        Empresas
+      </a>
+
+      <a routerLink="/fornecedores" routerLinkActive="active">
+        <span class="material-icons nav-icon">handshake</span>
+        Fornecedores
+      </a>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <router-outlet></router-outlet>
+  </main>
+</div>
+
+<div class="notifications">
+  @for (n of notifications$ | async; track n.id) {
+    <div class="notification notification-{{ n.type }}">
+      <span>{{ n.message }}</span>
+      <button class="close-btn" (click)="dismiss(n.id)">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+  }
+</div>

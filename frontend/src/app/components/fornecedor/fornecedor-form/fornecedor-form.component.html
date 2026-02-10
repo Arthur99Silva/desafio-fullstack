@@ -1,0 +1,188 @@
+<div class="page-header">
+  <div>
+    <h1>{{ isEdit ? 'Editar' : 'Novo' }} Fornecedor</h1>
+    <p class="subtitle">
+      {{ isEdit ? 'Atualize os dados do fornecedor' : 'Preencha os dados para cadastrar' }}
+    </p>
+  </div>
+  <a routerLink="/fornecedores" class="btn btn-outline">← Voltar</a>
+</div>
+
+<div class="card" style="padding: 32px; max-width: 720px;">
+  <form (ngSubmit)="onSubmit()" #form="ngForm">
+
+    <div class="form-group">
+      <label class="required">Tipo de Pessoa</label>
+      <select
+        class="form-control"
+        name="tipoPessoa"
+        [(ngModel)]="fornecedor.tipoPessoa"
+        (ngModelChange)="onTipoPessoaChange()"
+        required
+      >
+        <option value="JURIDICA">Pessoa Jurídica (CNPJ)</option>
+        <option value="FISICA">Pessoa Física (CPF)</option>
+      </select>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="required">
+          {{ fornecedor.tipoPessoa === 'FISICA' ? 'CPF' : 'CNPJ' }}
+        </label>
+        <input
+          class="form-control"
+          [class.is-invalid]="docInput.invalid && docInput.touched"
+          type="text"
+          name="cpfCnpj"
+          [(ngModel)]="fornecedor.cpfCnpj"
+          #docInput="ngModel"
+          required
+          [pattern]="fornecedor.tipoPessoa === 'FISICA' ? '\\d{11}' : '\\d{14}'"
+          [maxlength]="fornecedor.tipoPessoa === 'FISICA' ? 11 : 14"
+          [placeholder]="fornecedor.tipoPessoa === 'FISICA' ? '00000000000' : '00000000000000'"
+        />
+        @if (docInput.invalid && docInput.touched) {
+          <div class="form-error">
+            {{ fornecedor.tipoPessoa === 'FISICA'
+              ? 'CPF deve ter 11 dígitos' : 'CNPJ deve ter 14 dígitos' }}
+          </div>
+        }
+      </div>
+
+      <div class="form-group">
+        <label class="required">Nome</label>
+        <input
+          class="form-control"
+          [class.is-invalid]="nomeInput.invalid && nomeInput.touched"
+          type="text"
+          name="nome"
+          [(ngModel)]="fornecedor.nome"
+          #nomeInput="ngModel"
+          required
+          maxlength="200"
+          placeholder="Nome completo"
+        />
+        @if (nomeInput.invalid && nomeInput.touched) {
+          <div class="form-error">Nome é obrigatório</div>
+        }
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="required">E-mail</label>
+      <input
+        class="form-control"
+        [class.is-invalid]="emailInput.invalid && emailInput.touched"
+        type="email"
+        name="email"
+        [(ngModel)]="fornecedor.email"
+        #emailInput="ngModel"
+        required
+        email
+        placeholder="email&#64;exemplo.com"
+      />
+      @if (emailInput.invalid && emailInput.touched) {
+        <div class="form-error">E-mail inválido</div>
+      }
+    </div>
+
+    @if (fornecedor.tipoPessoa === 'FISICA') {
+      <div class="form-row">
+        <div class="form-group">
+          <label class="required">RG</label>
+          <input
+            class="form-control"
+            [class.is-invalid]="rgInput.invalid && rgInput.touched"
+            type="text"
+            name="rg"
+            [(ngModel)]="fornecedor.rg"
+            #rgInput="ngModel"
+            required
+            maxlength="20"
+            placeholder="Número do RG"
+          />
+          @if (rgInput.invalid && rgInput.touched) {
+            <div class="form-error">RG é obrigatório para Pessoa Física</div>
+          }
+        </div>
+
+        <div class="form-group">
+          <label class="required">Data de Nascimento</label>
+          <input
+            class="form-control"
+            [class.is-invalid]="dnInput.invalid && dnInput.touched"
+            type="date"
+            name="dataNascimento"
+            [(ngModel)]="fornecedor.dataNascimento"
+            #dnInput="ngModel"
+            required
+          />
+          @if (dnInput.invalid && dnInput.touched) {
+            <div class="form-error">Data de Nascimento é obrigatória</div>
+          }
+        </div>
+      </div>
+    }
+
+    <div class="form-group">
+      <label class="required">CEP</label>
+      <div style="display: flex; gap: 8px;">
+        <input
+          class="form-control"
+          [class.is-invalid]="(cepInput.invalid && cepInput.touched) || !!cepError"
+          style="max-width: 200px;"
+          type="text"
+          name="cep"
+          [(ngModel)]="fornecedor.cep"
+          #cepInput="ngModel"
+          required
+          pattern="\d{8}"
+          maxlength="8"
+          placeholder="00000000"
+          (blur)="consultarCep()"
+        />
+        <button
+          type="button"
+          class="btn btn-outline btn-sm"
+          (click)="consultarCep()"
+          [disabled]="consultandoCep"
+        >
+          @if (consultandoCep) {
+            <span class="spinner" style="width: 14px; height: 14px;"></span>
+          } @else {
+              Validar
+          }
+        </button>
+      </div>
+      @if (cepInput.invalid && cepInput.touched) {
+        <div class="form-error">CEP deve conter 8 dígitos numéricos</div>
+      }
+      @if (cepInfo && cepInfo.valido) {
+        <div class="cep-info">
+          <div class="cep-field"><strong>UF:</strong> {{ cepInfo.uf }}</div>
+          <div class="cep-field"><strong>Cidade:</strong> {{ cepInfo.cidade }}</div>
+          <div class="cep-field"><strong>Bairro:</strong> {{ cepInfo.bairro }}</div>
+          <div class="cep-field"><strong>Logradouro:</strong> {{ cepInfo.logradouro }}</div>
+        </div>
+      }
+      @if (cepError) {
+        <div class="cep-error">{{ cepError }}</div>
+      }
+    </div>
+
+    <div style="display: flex; gap: 12px; margin-top: 32px;">
+      <button
+        type="submit"
+        class="btn btn-primary"
+        [disabled]="form.invalid || submitting || !cepValidado"
+      >
+        @if (submitting) {
+          <span class="spinner" style="width: 16px; height: 16px;"></span>
+        }
+        {{ isEdit ? 'Atualizar' : 'Cadastrar' }}
+      </button>
+      <a routerLink="/fornecedores" class="btn btn-outline">Cancelar</a>
+    </div>
+  </form>
+</div>

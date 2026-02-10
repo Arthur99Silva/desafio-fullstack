@@ -1,0 +1,172 @@
+<div class="page-header">
+  <div>
+    <h1>Empresas</h1>
+    <p class="subtitle">Gerencie as empresas cadastradas</p>
+  </div>
+  <a routerLink="/empresas/novo" class="btn btn-primary">
+    + Nova Empresa
+  </a>
+</div>
+
+<div class="search-bar">
+  <div class="search-input">
+    <span class="material-icons search-icon">search</span>
+
+    <input type="text" placeholder="Buscar por nome ou CNPJ..." [(ngModel)]="search" (input)="onSearch()" />
+  </div>
+</div>
+
+
+<div class="card">
+  @if (loading) {
+  <div class="loading-overlay">
+    <div class="spinner"></div>
+    <span>Carregando...</span>
+  </div>
+  } @else if (page && page.content.length > 0) {
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>CNPJ</th>
+          <th>Nome Fantasia</th>
+          <th>Cidade/UF</th>
+          <th>CEP</th>
+          <th>Fornecedores</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (empresa of page.content; track empresa.id) {
+        <tr>
+          <td class="td-mono">
+            {{ empresa.cnpj | cpfCnpj }}
+          </td>
+
+          <td>
+            <strong>{{ empresa.nomeFantasia }}</strong>
+          </td>
+
+          <td>
+            {{ empresa.cidade }}
+            @if (empresa.uf) {
+            <span class="badge badge-uf">{{ empresa.uf }}</span>
+            }
+          </td>
+
+          <td class="td-mono">
+            {{ empresa.cep | cepFormat }}
+          </td>
+
+          <td>
+            <button class="btn btn-ghost btn-sm btn-link" (click)="openVincular(empresa)">
+              <span class="material-icons">groups</span>
+              {{ empresa.fornecedores?.length || 0 }}
+            </button>
+          </td>
+
+          <td>
+            <div class="table-actions">
+              <a [routerLink]="['/empresas/editar', empresa.id]" class="btn btn-ghost btn-sm" title="Editar">
+                <span class="material-icons">edit</span>
+              </a>
+
+              <button class="btn btn-ghost btn-sm" (click)="confirmDelete(empresa)" title="Excluir">
+                <span class="material-icons">delete</span>
+              </button>
+            </div>
+          </td>
+        </tr>
+        }
+      </tbody>
+
+    </table>
+  </div>
+
+  <div class="pagination">
+    <span class="pagination-info">
+      Mostrando {{ page.pageNumber * page.pageSize + 1 }} -
+      {{ Math.min((page.pageNumber + 1) * page.pageSize, page.totalElements) }}
+      de {{ page.totalElements }}
+    </span>
+    <div class="pagination-controls">
+      <button [disabled]="page.first" (click)="goToPage(page.pageNumber - 1)">← Anterior</button>
+      <button [disabled]="page.last" (click)="goToPage(page.pageNumber + 1)">Próximo →</button>
+    </div>
+  </div>
+  } @else {
+  <div class="empty-state">
+    <div class="empty-icon material-icons">business</div>
+    <h3>Nenhuma empresa encontrada</h3>
+    <p>Comece cadastrando uma nova empresa</p>
+  </div>
+  }
+</div>
+
+@if (empresaToDelete) {
+<div class="modal-backdrop" (click)="empresaToDelete = null">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Confirmar Exclusão</h3>
+    </div>
+    <div class="modal-body">
+      <p>Deseja realmente excluir a empresa <strong>{{ empresaToDelete.nomeFantasia }}</strong>?</p>
+      <p style="color: var(--text-secondary); font-size: 0.875rem; margin-top: 8px;">
+        Esta ação não pode ser desfeita.
+      </p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" (click)="empresaToDelete = null">Cancelar</button>
+      <button class="btn btn-danger" (click)="deleteEmpresa()">Excluir</button>
+    </div>
+  </div>
+</div>
+}
+
+@if (empresaVincular) {
+<div class="modal-backdrop" (click)="empresaVincular = null">
+  <div class="modal" style="max-width: 600px;" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Fornecedores — {{ empresaVincular.nomeFantasia }}</h3>
+      <button class="btn btn-ghost btn-sm" (click)="empresaVincular = null">✕</button>
+    </div>
+    <div class="modal-body">
+      @if (empresaVincular.fornecedores && empresaVincular.fornecedores.length > 0) {
+      <div style="margin-bottom: 20px;">
+        <label style="font-size: 0.8125rem; font-weight: 600; margin-bottom: 8px; display: block;">Vinculados:</label>
+        @for (f of empresaVincular.fornecedores; track f.id) {
+        <div
+          style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 4px;">
+          <div>
+            <strong>{{ f.nome }}</strong>
+            <span style="color: var(--text-secondary); font-size: 0.8125rem; margin-left: 8px;">{{ f.cpfCnpj | cpfCnpj
+              }}</span>
+            <span class="badge" [class.badge-pf]="f.tipoPessoa === 'FISICA'"
+              [class.badge-pj]="f.tipoPessoa === 'JURIDICA'" style="margin-left: 8px;">
+              {{ f.tipoPessoa === 'FISICA' ? 'PF' : 'PJ' }}
+            </span>
+          </div>
+          <button class="btn btn-ghost btn-sm" (click)="desvincular(f.id)">✕</button>
+        </div>
+        }
+      </div>
+      } @else {
+      <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 16px;">Nenhum fornecedor vinculado.</p>
+      }
+
+      <label style="font-size: 0.8125rem; font-weight: 600; margin-bottom: 8px; display: block;">Vincular novo:</label>
+      <div style="display: flex; gap: 8px;">
+        <select class="form-control" [(ngModel)]="fornecedorIdVincular" style="flex: 1;">
+          <option [ngValue]="null">Selecione um fornecedor...</option>
+          @for (f of fornecedoresDisponiveis; track f.id) {
+          <option [ngValue]="f.id">{{ f.nome }} — {{ f.cpfCnpj | cpfCnpj }}</option>
+          }
+        </select>
+        <button class="btn btn-primary btn-sm" [disabled]="!fornecedorIdVincular" (click)="vincular()">
+          Vincular
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+}

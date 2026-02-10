@@ -1,0 +1,155 @@
+<div class="page-header">
+  <div>
+    <h1>Fornecedores</h1>
+    <p class="subtitle">Gerencie os fornecedores cadastrados</p>
+  </div>
+  <a routerLink="/fornecedores/novo" class="btn btn-primary">
+    + Novo Fornecedor
+  </a>
+</div>
+
+<div class="search-bar">
+  <div class="search-input">
+    <span class="material-icons search-icon">search</span>
+    <input
+      type="text"
+      placeholder="Filtrar por nome..."
+      [(ngModel)]="filterNome"
+      (input)="onFilter()"
+    />
+  </div>
+  <div class="search-input" style="max-width: 280px;">
+    <span class="material-icons search-icon">person</span>
+    <input
+      type="text"
+      placeholder="Filtrar por CPF/CNPJ..."
+      [(ngModel)]="filterCpfCnpj"
+      (input)="onFilter()"
+    />
+  </div>
+</div>
+
+<div class="card">
+  @if (loading) {
+    <div class="loading-overlay">
+      <div class="spinner"></div>
+      <span>Carregando...</span>
+    </div>
+  } @else if (page && page.content.length > 0) {
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Tipo</th>
+            <th>CPF/CNPJ</th>
+            <th>Nome</th>
+            <th>E-mail</th>
+            <th>Cidade/UF</th>
+            <th>Empresas</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+  @for (f of page.content; track f.id) {
+    <tr>
+      <td>
+        <span
+          class="badge"
+          [class.badge-pf]="f.tipoPessoa === 'FISICA'"
+          [class.badge-pj]="f.tipoPessoa === 'JURIDICA'"
+        >
+          {{ f.tipoPessoa === 'FISICA' ? 'PF' : 'PJ' }}
+        </span>
+      </td>
+
+      <td class="td-mono">
+        {{ f.cpfCnpj | cpfCnpj }}
+      </td>
+
+      <td>
+        <strong>{{ f.nome }}</strong>
+      </td>
+
+      <td class="td-muted">
+        {{ f.email }}
+      </td>
+
+      <td>
+        {{ f.cidade }}
+        @if (f.uf) {
+          <span class="badge badge-uf">{{ f.uf }}</span>
+        }
+      </td>
+
+      <td>
+        <span class="count-info">
+          <span class="material-icons">business</span>
+          {{ f.empresas?.length || 0 }}
+        </span>
+      </td>
+
+      <td>
+        <div class="table-actions">
+          <a
+            [routerLink]="['/fornecedores/editar', f.id]"
+            class="btn btn-ghost btn-sm"
+            title="Editar"
+          >
+            <span class="material-icons">edit</span>
+          </a>
+
+          <button
+            class="btn btn-ghost btn-sm"
+            (click)="confirmDelete(f)"
+            title="Excluir"
+          >
+            <span class="material-icons">delete</span>
+          </button>
+        </div>
+      </td>
+    </tr>
+  }
+</tbody>
+
+      </table>
+    </div>
+
+    <div class="pagination">
+      <span class="pagination-info">
+        Mostrando {{ page.pageNumber * page.pageSize + 1 }} -
+        {{ Math.min((page.pageNumber + 1) * page.pageSize, page.totalElements) }}
+        de {{ page.totalElements }}
+      </span>
+      <div class="pagination-controls">
+        <button [disabled]="page.first" (click)="goToPage(page.pageNumber - 1)">← Anterior</button>
+        <button [disabled]="page.last" (click)="goToPage(page.pageNumber + 1)">Próximo →</button>
+      </div>
+    </div>
+  } @else {
+    <div class="empty-state">
+      <div class="empty-icon material-icons">handshake</div>
+      <h3>Nenhum fornecedor encontrado</h3>
+      <p>Cadastre um novo fornecedor ou ajuste os filtros</p>
+    </div>
+  }
+</div>
+
+@if (fornecedorToDelete) {
+  <div class="modal-backdrop" (click)="fornecedorToDelete = null">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Confirmar Exclusão</h3>
+      </div>
+      <div class="modal-body">
+        <p>Deseja realmente excluir o fornecedor <strong>{{ fornecedorToDelete.nome }}</strong>?</p>
+        <p style="color: var(--text-secondary); font-size: 0.875rem; margin-top: 8px;">
+          Os vínculos com empresas também serão removidos.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" (click)="fornecedorToDelete = null">Cancelar</button>
+        <button class="btn btn-danger" (click)="deleteFornecedor()">Excluir</button>
+      </div>
+    </div>
+  </div>
+}

@@ -1,0 +1,103 @@
+<div class="page-header">
+  <div>
+    <h1>{{ isEdit ? 'Editar' : 'Nova' }} Empresa</h1>
+    <p class="subtitle">{{ isEdit ? 'Atualize os dados da empresa' : 'Preencha os dados para cadastrar' }}</p>
+  </div>
+  <a routerLink="/empresas" class="btn btn-outline">← Voltar</a>
+</div>
+
+<div class="card" style="padding: 32px; max-width: 720px;">
+  <form (ngSubmit)="onSubmit()" #form="ngForm">
+    <div class="form-group">
+      <label class="required">CNPJ</label>
+      <input
+        class="form-control"
+        [class.is-invalid]="cnpjInput.invalid && cnpjInput.touched"
+        type="text"
+        name="cnpj"
+        [(ngModel)]="empresa.cnpj"
+        #cnpjInput="ngModel"
+        required
+        pattern="\d{14}"
+        maxlength="14"
+        placeholder="00000000000000"
+      />
+      @if (cnpjInput.invalid && cnpjInput.touched) {
+        <div class="form-error">CNPJ deve conter 14 dígitos numéricos</div>
+      }
+    </div>
+
+    <div class="form-group">
+      <label class="required">Nome Fantasia</label>
+      <input
+        class="form-control"
+        [class.is-invalid]="nomeInput.invalid && nomeInput.touched"
+        type="text"
+        name="nomeFantasia"
+        [(ngModel)]="empresa.nomeFantasia"
+        #nomeInput="ngModel"
+        required
+        maxlength="200"
+        placeholder="Nome da empresa"
+      />
+      @if (nomeInput.invalid && nomeInput.touched) {
+        <div class="form-error">Nome Fantasia é obrigatório</div>
+      }
+    </div>
+
+    <div class="form-group">
+      <label class="required">CEP</label>
+      <div style="display: flex; gap: 8px;">
+        <input
+          class="form-control"
+          [class.is-invalid]="(cepInput.invalid && cepInput.touched) || cepError"
+          style="max-width: 200px;"
+          type="text"
+          name="cep"
+          [(ngModel)]="empresa.cep"
+          #cepInput="ngModel"
+          required
+          pattern="\d{8}"
+          maxlength="8"
+          placeholder="00000000"
+          (blur)="consultarCep()"
+        />
+        <button type="button" class="btn btn-outline btn-sm" (click)="consultarCep()" [disabled]="consultandoCep">
+          @if (consultandoCep) {
+            <span class="spinner" style="width: 14px; height: 14px;"></span>
+          } @else {
+              Validar
+          }
+        </button>
+      </div>
+      @if (cepInput.invalid && cepInput.touched) {
+        <div class="form-error">CEP deve conter 8 dígitos numéricos</div>
+      }
+      @if (cepInfo && cepInfo.valido) {
+        <div class="cep-info">
+          <div class="cep-field"><strong>UF:</strong> {{ cepInfo.uf }}</div>
+          <div class="cep-field"><strong>Cidade:</strong> {{ cepInfo.cidade }}</div>
+          <div class="cep-field"><strong>Bairro:</strong> {{ cepInfo.bairro }}</div>
+          <div class="cep-field"><strong>Logradouro:</strong> {{ cepInfo.logradouro }}</div>
+        </div>
+      }
+      @if (cepError) {
+        <div class="cep-error">{{ cepError }}</div>
+      }
+    </div>
+
+    <div style="display: flex; gap: 12px; margin-top: 32px;">
+      <button
+        type="submit"
+        class="btn btn-primary"
+        [disabled]="form.invalid || submitting || !cepValidado"
+      >
+        @if (submitting) {
+          <span class="spinner" style="width: 16px; height: 16px;"></span>
+        }
+        {{ isEdit ? 'Atualizar' : 'Cadastrar' }}
+      </button>
+      <a routerLink="/empresas" class="btn btn-outline">Cancelar</a>
+    </div>
+  </form>
+</div>
