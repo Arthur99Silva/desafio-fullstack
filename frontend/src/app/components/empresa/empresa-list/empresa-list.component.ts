@@ -1,7 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormControl } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { debounceTime, distinctUntilChanged, switchMap, catchError, of, finalize } from 'rxjs';
 import { EmpresaService } from '../../../services/empresa.service';
 import { FornecedorService } from '../../../services/fornecedor.service';
 import { NotificationService } from '../../../services/notification.service';
@@ -12,14 +14,14 @@ import { CepFormatPipe } from '../../../pipes/cep-format.pipe';
 @Component({
   selector: 'app-empresa-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, CpfCnpjPipe, CepFormatPipe],
+  imports: [CommonModule, RouterLink, FormsModule, ReactiveFormsModule, CpfCnpjPipe, CepFormatPipe],
   templateUrl: './empresa-list.component.html',
 })
 export class EmpresaListComponent implements OnInit {
   page: PageResponse<Empresa> | null = null;
-  search = '';
   loading = false;
-  searchTimeout: any;
+  
+  searchControl = new FormControl('');
 
   empresaToDelete: Empresa | null = null;
   empresaVincular: Empresa | null = null;
@@ -32,15 +34,44 @@ export class EmpresaListComponent implements OnInit {
     private empresaService: EmpresaService,
     private fornecedorService: FornecedorService,
     private notification: NotificationService
-  ) {}
+  ) {
+
+    this.setupSearch();
+  }
 
   ngOnInit(): void {
     this.loadEmpresas();
   }
 
+  private setupSearch(): void {
+    this.searchControl.valueChanges
+      .pipe(
+        debounceTime(400),
+        distinctUntilChanged(),
+        switchMap((term) => {
+          this.loading = true;
+          return this.empresaService.findAll(term || '', 0).pipe(
+            catchError(err => {
+              this.notification.error('Erro ao pesquisar empresas');
+              return of(null);
+            }),
+            finalize(() => this.loading = false)
+          );
+        }),
+        takeUntilDestroyed()
+      )
+      .subscribe((data) => {
+        if (data) {
+          this.page = data;
+        }
+      });
+  }
+
   loadEmpresas(page = 0): void {
     this.loading = true;
-    this.empresaService.findAll(this.search, page).subscribe({
+    const searchTerm = this.searchControl.value || '';
+    
+    this.empresaService.findAll(searchTerm, page).subscribe({
       next: (data) => {
         this.page = data;
         this.loading = false;
@@ -50,11 +81,6 @@ export class EmpresaListComponent implements OnInit {
         this.loading = false;
       },
     });
-  }
-
-  onSearch(): void {
-    clearTimeout(this.searchTimeout);
-    this.searchTimeout = setTimeout(() => this.loadEmpresas(), 400);
   }
 
   goToPage(page: number): void {
@@ -71,7 +97,7 @@ export class EmpresaListComponent implements OnInit {
       next: () => {
         this.notification.success('Empresa excluída com sucesso');
         this.empresaToDelete = null;
-        this.loadEmpresas();
+        this.loadEmpresas(this.page?.pageNumber || 0);
       },
       error: (err) => {
         this.notification.error(err.error?.message || 'Erro ao excluir empresa');
@@ -80,7 +106,6 @@ export class EmpresaListComponent implements OnInit {
   }
 
   openVincular(empresa: Empresa): void {
-    // Reload empresa details
     this.empresaService.findById(empresa.id!).subscribe({
       next: (data) => {
         this.empresaVincular = data;

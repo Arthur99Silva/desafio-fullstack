@@ -12,7 +12,7 @@
   <div class="search-input">
     <span class="material-icons search-icon">search</span>
 
-    <input type="text" placeholder="Buscar por nome ou CNPJ..." [(ngModel)]="search" (input)="onSearch()" />
+    <input type="text" placeholder="Buscar por nome ou CNPJ..." [formControl]="searchControl"/>
   </div>
 </div>
 

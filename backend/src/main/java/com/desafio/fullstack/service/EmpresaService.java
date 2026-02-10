@@ -6,11 +6,12 @@ import com.desafio.fullstack.dto.FornecedorDTO;
 import com.desafio.fullstack.dto.PageResponse;
 import com.desafio.fullstack.entity.Empresa;
 import com.desafio.fullstack.entity.Fornecedor;
+import com.desafio.fullstack.enums.Estado; // <--- NOVO IMPORT
+import com.desafio.fullstack.enums.TipoPessoa;
 import com.desafio.fullstack.exception.BusinessException;
 import com.desafio.fullstack.exception.ResourceNotFoundException;
 import com.desafio.fullstack.repository.EmpresaRepository;
 import com.desafio.fullstack.repository.FornecedorRepository;
-import com.desafio.fullstack.enums.TipoPessoa;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -43,26 +44,26 @@ public class EmpresaService {
 
     @Transactional
     public EmpresaDTO.Response create(EmpresaDTO.Request request) {
-        // Validar CNPJ único
+        // cnpj validator
         if (empresaRepository.existsByCnpj(request.getCnpj())) {
             throw new BusinessException("CNPJ já cadastrado: " + request.getCnpj());
         }
 
-        // Validar e consultar CEP
+        // cep validator
         CepDTO cepInfo = cepService.consultarCep(request.getCep());
         if (!cepInfo.isValido()) {
             throw new BusinessException("CEP inválido: " + cepInfo.getMensagem());
         }
 
         Empresa empresa = Empresa.builder()
-            .cnpj(request.getCnpj())
-            .nomeFantasia(request.getNomeFantasia())
-            .cep(request.getCep())
-            .logradouro(cepInfo.getLogradouro())
-            .bairro(cepInfo.getBairro())
-            .cidade(cepInfo.getCidade())
-            .uf(cepInfo.getUf())
-            .build();
+                .cnpj(request.getCnpj())
+                .nomeFantasia(request.getNomeFantasia())
+                .cep(request.getCep())
+                .logradouro(cepInfo.getLogradouro())
+                .bairro(cepInfo.getBairro())
+                .cidade(cepInfo.getCidade())
+                .uf(cepInfo.getUf())
+                .build();
 
         empresa = empresaRepository.save(empresa);
         return toResponse(empresa);
@@ -72,12 +73,12 @@ public class EmpresaService {
     public EmpresaDTO.Response update(Long id, EmpresaDTO.Request request) {
         Empresa empresa = getEmpresaOrThrow(id);
 
-        // Validar CNPJ único (exceto o próprio)
+        // cnpj validator
         if (empresaRepository.existsByCnpjAndIdNot(request.getCnpj(), id)) {
             throw new BusinessException("CNPJ já cadastrado por outra empresa: " + request.getCnpj());
         }
 
-        // Validar CEP
+        // CEP validator
         CepDTO cepInfo = cepService.consultarCep(request.getCep());
         if (!cepInfo.isValido()) {
             throw new BusinessException("CEP inválido: " + cepInfo.getMensagem());
@@ -106,10 +107,9 @@ public class EmpresaService {
     public EmpresaDTO.Response vincularFornecedor(Long empresaId, Long fornecedorId) {
         Empresa empresa = getEmpresaOrThrow(empresaId);
         Fornecedor fornecedor = fornecedorRepository.findById(fornecedorId)
-            .orElseThrow(() -> new ResourceNotFoundException("Fornecedor", fornecedorId));
+                .orElseThrow(() -> new ResourceNotFoundException("Fornecedor", fornecedorId));
 
-        // Regra: empresa do PR não pode vincular PF menor de idade
-        validarFornecedorMenorParana(empresa, fornecedor);
+        validarRegraIdadePorEstado(empresa, fornecedor);
 
         empresa.getFornecedores().add(fornecedor);
         empresa = empresaRepository.save(empresa);
@@ -120,76 +120,79 @@ public class EmpresaService {
     public EmpresaDTO.Response desvincularFornecedor(Long empresaId, Long fornecedorId) {
         Empresa empresa = getEmpresaOrThrow(empresaId);
         Fornecedor fornecedor = fornecedorRepository.findById(fornecedorId)
-            .orElseThrow(() -> new ResourceNotFoundException("Fornecedor", fornecedorId));
+                .orElseThrow(() -> new ResourceNotFoundException("Fornecedor", fornecedorId));
 
         empresa.getFornecedores().remove(fornecedor);
         empresa = empresaRepository.save(empresa);
         return toResponse(empresa);
     }
 
-    // === Regras de negócio ===
+    private void validarRegraIdadePorEstado(Empresa empresa, Fornecedor fornecedor) {
+        Estado estadoEmpresa;
+        try {
+            estadoEmpresa = Estado.fromSigla(empresa.getUf());
+        } catch (IllegalArgumentException e) {
+            return;
+        }
 
-    /**
-     * Se a empresa é do Paraná (UF = "PR"), não pode vincular fornecedor
-     * pessoa física menor de 18 anos.
-     */
-    private void validarFornecedorMenorParana(Empresa empresa, Fornecedor fornecedor) {
-        if ("PR".equalsIgnoreCase(empresa.getUf())
-            && fornecedor.getTipoPessoa() == TipoPessoa.FISICA
-            && fornecedor.getDataNascimento() != null) {
+        if (fornecedor.getTipoPessoa() == TipoPessoa.FISICA
+                && fornecedor.getDataNascimento() != null) {
 
             int idade = Period.between(fornecedor.getDataNascimento(), LocalDate.now()).getYears();
-            if (idade < 18) {
+
+            if (!estadoEmpresa.permiteMenorIdade() && idade < 18) {
                 throw new BusinessException(
-                    "Empresas do Paraná não podem cadastrar fornecedor pessoa física menor de idade. " +
-                    "Idade do fornecedor: " + idade + " anos."
+                        String.format(
+                                "Empresas do estado %s (%s) não podem cadastrar fornecedor pessoa física menor de idade. Idade atual: %d anos.",
+                                estadoEmpresa.getNome(),
+                                estadoEmpresa.name(),
+                                idade
+                        )
                 );
             }
         }
     }
 
-    // === Helpers ===
-
     private Empresa getEmpresaOrThrow(Long id) {
         return empresaRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Empresa", id));
+                .orElseThrow(() -> new ResourceNotFoundException("Empresa", id));
     }
 
     private EmpresaDTO.Response toResponse(Empresa empresa) {
         return EmpresaDTO.Response.builder()
-            .id(empresa.getId())
-            .cnpj(empresa.getCnpj())
-            .nomeFantasia(empresa.getNomeFantasia())
-            .cep(empresa.getCep())
-            .logradouro(empresa.getLogradouro())
-            .bairro(empresa.getBairro())
-            .cidade(empresa.getCidade())
-            .uf(empresa.getUf())
-            .criadoEm(empresa.getCriadoEm())
-            .atualizadoEm(empresa.getAtualizadoEm())
-            .fornecedores(
-                empresa.getFornecedores().stream()
-                    .map(f -> FornecedorDTO.ResponseSimple.builder()
-                        .id(f.getId())
-                        .cpfCnpj(f.getCpfCnpj())
-                        .tipoPessoa(f.getTipoPessoa())
-                        .nome(f.getNome())
-                        .email(f.getEmail())
-                        .build())
-                    .collect(Collectors.toList())
-            )
-            .build();
+                .id(empresa.getId())
+                .cnpj(empresa.getCnpj())
+                .nomeFantasia(empresa.getNomeFantasia())
+                .cep(empresa.getCep())
+                .logradouro(empresa.getLogradouro())
+                .bairro(empresa.getBairro())
+                .cidade(empresa.getCidade())
+                .uf(empresa.getUf())
+                .criadoEm(empresa.getCriadoEm())
+                .atualizadoEm(empresa.getAtualizadoEm())
+                .fornecedores(
+                        empresa.getFornecedores().stream()
+                                .map(f -> FornecedorDTO.ResponseSimple.builder()
+                                        .id(f.getId())
+                                        .cpfCnpj(f.getCpfCnpj())
+                                        .tipoPessoa(f.getTipoPessoa())
+                                        .nome(f.getNome())
+                                        .email(f.getEmail())
+                                        .build())
+                                .collect(Collectors.toList())
+                )
+                .build();
     }
 
     private PageResponse<EmpresaDTO.Response> buildPageResponse(Page<Empresa> page) {
         return PageResponse.<EmpresaDTO.Response>builder()
-            .content(page.getContent().stream().map(this::toResponse).collect(Collectors.toList()))
-            .pageNumber(page.getNumber())
-            .pageSize(page.getSize())
-            .totalElements(page.getTotalElements())
-            .totalPages(page.getTotalPages())
-            .first(page.isFirst())
-            .last(page.isLast())
-            .build();
+                .content(page.getContent().stream().map(this::toResponse).collect(Collectors.toList()))
+                .pageNumber(page.getNumber())
+                .pageSize(page.getSize())
+                .totalElements(page.getTotalElements())
+                .totalPages(page.getTotalPages())
+                .first(page.isFirst())
+                .last(page.isLast())
+                .build();
     }
 }
