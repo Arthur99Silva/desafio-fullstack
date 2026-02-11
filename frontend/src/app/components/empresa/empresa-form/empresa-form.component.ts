@@ -1,7 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
+import { finalize } from 'rxjs'; // <--- Importante para o loading state
+
 import { EmpresaService } from '../../../services/empresa.service';
 import { CepService } from '../../../services/cep.service';
 import { NotificationService } from '../../../services/notification.service';
@@ -14,15 +16,21 @@ import { EmpresaRequest, CepInfo } from '../../../models';
   templateUrl: './empresa-form.component.html',
 })
 export class EmpresaFormComponent implements OnInit {
+  // Acesso ao formulário para validação extra no TS
+  @ViewChild('form') form!: NgForm;
+
   empresa: EmpresaRequest = { cnpj: '', nomeFantasia: '', cep: '' };
+  
+  // Controles de Estado
   isEdit = false;
   editId: number | null = null;
-  submitting = false;
+  submitting = false; // Controla o loading do botão Salvar
 
+  // Controles de CEP
   cepInfo: CepInfo | null = null;
   cepError = '';
   cepValidado = false;
-  consultandoCep = false;
+  consultandoCep = false; // Controla o loading do botão Validar CEP
 
   constructor(
     private empresaService: EmpresaService,
@@ -37,31 +45,36 @@ export class EmpresaFormComponent implements OnInit {
     if (id) {
       this.isEdit = true;
       this.editId = +id;
-      this.empresaService.findById(this.editId).subscribe({
-        next: (data) => {
-          this.empresa = {
-            cnpj: data.cnpj,
-            nomeFantasia: data.nomeFantasia,
-            cep: data.cep,
-          };
-          if (data.uf) {
-            this.cepInfo = {
-              cep: data.cep,
-              uf: data.uf,
-              cidade: data.cidade || '',
-              bairro: data.bairro || '',
-              logradouro: data.logradouro || '',
-              valido: true,
-            };
-            this.cepValidado = true;
-          }
-        },
-        error: () => {
-          this.notification.error('Empresa não encontrada');
-          this.router.navigate(['/empresas']);
-        },
-      });
+      this.carregarEmpresa(this.editId);
     }
+  }
+
+  carregarEmpresa(id: number): void {
+    this.empresaService.findById(id).subscribe({
+      next: (data) => {
+        this.empresa = {
+          cnpj: data.cnpj,
+          nomeFantasia: data.nomeFantasia,
+          cep: data.cep,
+        };
+        // Se já tem dados de endereço, preenche visualmente
+        if (data.uf) {
+          this.cepInfo = {
+            cep: data.cep,
+            uf: data.uf,
+            cidade: data.cidade || '',
+            bairro: data.bairro || '',
+            logradouro: data.logradouro || '',
+            valido: true,
+          };
+          this.cepValidado = true;
+        }
+      },
+      error: () => {
+        this.notification.error('Empresa não encontrada');
+        this.router.navigate(['/empresas']);
+      },
+    });
   }
 
   consultarCep(): void {
@@ -72,45 +85,55 @@ export class EmpresaFormComponent implements OnInit {
     this.cepInfo = null;
     this.cepValidado = false;
 
-    this.cepService.consultar(this.empresa.cep).subscribe({
-      next: (info) => {
-        if (info.valido) {
-          this.cepInfo = info;
-          this.cepValidado = true;
-        } else {
-          this.cepError = info.mensagem || 'CEP inválido';
-        }
-        this.consultandoCep = false;
-      },
-      error: () => {
-        this.cepError = 'Erro ao consultar CEP';
-        this.consultandoCep = false;
-      },
-    });
+    this.cepService.consultar(this.empresa.cep)
+      .pipe(finalize(() => this.consultandoCep = false)) // Garante destravamento
+      .subscribe({
+        next: (info) => {
+          if (info.valido) {
+            this.cepInfo = info;
+            this.cepValidado = true;
+          } else {
+            this.cepError = info.mensagem || 'CEP inválido';
+          }
+        },
+        error: () => {
+          this.cepError = 'Erro ao consultar CEP';
+        },
+      });
   }
 
   onSubmit(): void {
+    // Validação de segurança
+    if (this.form.invalid) {
+      this.notification.warning('Preencha todos os campos obrigatórios');
+      return;
+    }
+
     if (!this.cepValidado) {
       this.notification.warning('Valide o CEP antes de salvar');
       return;
     }
 
-    this.submitting = true;
-    const obs = this.isEdit
+    this.submitting = true; // Bloqueia o botão
+
+    const request$ = this.isEdit
       ? this.empresaService.update(this.editId!, this.empresa)
       : this.empresaService.create(this.empresa);
 
-    obs.subscribe({
-      next: () => {
-        this.notification.success(
-          this.isEdit ? 'Empresa atualizada com sucesso' : 'Empresa cadastrada com sucesso'
-        );
-        this.router.navigate(['/empresas']);
-      },
-      error: (err) => {
-        this.notification.error(err.error?.message || 'Erro ao salvar empresa');
-        this.submitting = false;
-      },
-    });
+    request$
+      .pipe(
+        finalize(() => this.submitting = false) // <--- O segredo do Senior: Desbloqueia SEMPRE
+      )
+      .subscribe({
+        next: () => {
+          this.notification.success(
+            this.isEdit ? 'Empresa atualizada com sucesso' : 'Empresa cadastrada com sucesso'
+          );
+          this.router.navigate(['/empresas']);
+        },
+        error: (err) => {
+          this.notification.error(err.error?.message || 'Erro ao salvar empresa');
+        },
+      });
   }
 }
