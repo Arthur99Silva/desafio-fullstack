@@ -20,8 +20,7 @@ Sistema completo de gerenciamento de **Empresas** e **Fornecedores** com relacio
 
 ### Infraestrutura
 - **Docker** + **Docker Compose**
-- **Nginx** (servindo frontend + proxy reverso)
-
+- **Nginx**
 ---
 
 ## Como Executar
@@ -107,9 +106,3 @@ ng serve
 cd backend
 mvn test
 ```
-
-Testes cobrem:
-- Criação de empresa com validação de CNPJ duplicado e CEP
-- Regra de bloqueio de PF menor de idade para empresas do Paraná
-- Validação de campos obrigatórios de Pessoa Física (RG, Data Nascimento)
-- Consistência entre tipo de pessoa e documento
