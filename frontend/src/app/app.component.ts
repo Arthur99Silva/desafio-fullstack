@@ -11,6 +11,15 @@ import { NotificationService } from './services/notification.service';
 })
 export class AppComponent {
   notifications$ = this.notificationService.notifications$;
+  sidebarCollapsed = false;
+
   constructor(private notificationService: NotificationService) {}
-  dismiss(id: number): void { this.notificationService.remove(id); }
+
+  dismiss(id: number): void {
+    this.notificationService.remove(id);
+  }
+
+  toggleSidebar(): void {
+    this.sidebarCollapsed = !this.sidebarCollapsed;
+  }
 }

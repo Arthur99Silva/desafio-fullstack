@@ -1,29 +1,32 @@
 <div class="app-layout">
-  <aside class="sidebar">
+  <aside class="sidebar" [class.collapsed]="sidebarCollapsed">
     <div class="logo">
       <h2>
-        <span class="material-icons" style="font-size: 32px; vertical-align: middle; margin-right: 6px;">
-          dashboard
-        </span>
-        Gestão
+        <span class="material-icons" style="font-size: 28px; vertical-align: middle; margin-right: 6px;">dashboard</span>
+        <span class="logo-text">Gestão Empresarial</span>
       </h2>
-      <span>Empresas e Fornecedores</span>
     </div>
 
-    <nav>
-      <a routerLink="/empresas" routerLinkActive="active">
-        <span class="material-icons nav-icon">business</span>
-        Empresas
-      </a>
+    <button class="toggle-btn" (click)="toggleSidebar()" type="button"
+            [attr.title]="sidebarCollapsed ? 'Expandir menu' : 'Minimizar menu'">
+      <span class="material-icons">{{ sidebarCollapsed ? 'chevron_right' : 'chevron_left' }}</span>
+    </button>
 
-      <a routerLink="/fornecedores" routerLinkActive="active">
+    <nav>
+      <a routerLink="/empresas" routerLinkActive="active"
+         [attr.title]="sidebarCollapsed ? 'Empresas' : null">
+        <span class="material-icons nav-icon">business</span>
+        <span class="nav-text">Empresas</span>
+      </a>
+      <a routerLink="/fornecedores" routerLinkActive="active"
+         [attr.title]="sidebarCollapsed ? 'Fornecedores' : null">
         <span class="material-icons nav-icon">handshake</span>
-        Fornecedores
+        <span class="nav-text">Fornecedores</span>
       </a>
     </nav>
   </aside>
 
-  <main class="main-content">
+  <main class="main-content" [class.shifted]="sidebarCollapsed">
     <router-outlet></router-outlet>
   </main>
 </div>
