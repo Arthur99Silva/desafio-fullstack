@@ -24,22 +24,6 @@ Sistema completo de gerenciamento de **Empresas** e **Fornecedores** com relacio
 
 ---
 
-## Arquitetura
-
-```
-┌─────────────┐     ┌──────────────────┐     ┌──────────────┐
-│   Angular    │────▶│  Spring Boot API  │────▶│  PostgreSQL  │
-│  (Nginx:80)  │     │   (Java:8080)     │     │   (:5432)    │
-└─────────────┘     └──────────────────┘     └──────────────┘
-                           │
-                    ┌──────┴──────┐
-                    │  cep.la API │
-                    │  ViaCEP API │
-                    └─────────────┘
-```
-
----
-
 ## Como Executar
 
 ### Opção 1: Docker Compose (Recomendado)
@@ -114,37 +98,6 @@ ng serve
 | Método | Endpoint | Descrição |
 |--------|----------|-----------|
 | GET | `/api/cep/{cep}` | Consultar e validar CEP |
-
----
-
-## Estrutura do Projeto
-
-```
-desafio-fullstack/
-├── docker-compose.yml
-├── backend/
-│   ├── Dockerfile
-│   ├── pom.xml
-│   └── src/main/java/com/desafio/fullstack/
-│       ├── config/          # CORS, OpenAPI
-│       ├── controller/      # REST endpoints
-│       ├── dto/             # Request/Response DTOs
-│       ├── entity/          # JPA entities
-│       ├── enums/           # TipoPessoa
-│       ├── exception/       # Global handler
-│       ├── repository/      # Spring Data repos
-│       └── service/         # Business logic
-└── frontend/
-    ├── Dockerfile
-    ├── nginx.conf
-    └── src/app/
-        ├── components/      # Angular components
-        │   ├── empresa/
-        │   └── fornecedor/
-        ├── models/          # TypeScript interfaces
-        ├── pipes/           # CPF/CNPJ, CEP formatters
-        └── services/        # HTTP services
-```
 
 ---
 
