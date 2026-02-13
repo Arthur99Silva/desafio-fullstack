@@ -108,11 +108,12 @@ public class FornecedorService {
             if (request.getCpfCnpj().length() != 11) {
                 throw new BusinessException("Pessoa Física deve informar CPF com 11 dígitos");
             }
+
             if (request.getRg() == null || request.getRg().isBlank()) {
-                throw new BusinessException("RG é obrigatório para Pessoa Física");
+                throw new BusinessException("O RG é obrigatório para Pessoa Física (requisito 2.e)");
             }
             if (request.getDataNascimento() == null) {
-                throw new BusinessException("Data de Nascimento é obrigatória para Pessoa Física");
+                throw new BusinessException("A Data de Nascimento é obrigatória para Pessoa Física (requisito 2.e)");
             }
         } else {
             if (request.getCpfCnpj().length() != 14) {

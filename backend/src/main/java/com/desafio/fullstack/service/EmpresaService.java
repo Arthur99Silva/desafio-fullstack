@@ -6,7 +6,6 @@ import com.desafio.fullstack.dto.FornecedorDTO;
 import com.desafio.fullstack.dto.PageResponse;
 import com.desafio.fullstack.entity.Empresa;
 import com.desafio.fullstack.entity.Fornecedor;
-import com.desafio.fullstack.enums.Estado;
 import com.desafio.fullstack.enums.TipoPessoa;
 import com.desafio.fullstack.exception.BusinessException;
 import com.desafio.fullstack.exception.ResourceNotFoundException;
@@ -128,27 +127,14 @@ public class EmpresaService {
     }
 
     private void validarRegraIdadePorEstado(Empresa empresa, Fornecedor fornecedor) {
-        Estado estadoEmpresa;
-        try {
-            estadoEmpresa = Estado.fromSigla(empresa.getUf());
-        } catch (IllegalArgumentException e) {
-            return;
-        }
-
-        if (fornecedor.getTipoPessoa() == TipoPessoa.FISICA
+        if ("PR".equalsIgnoreCase(empresa.getUf())
+                && fornecedor.getTipoPessoa() == TipoPessoa.FISICA
                 && fornecedor.getDataNascimento() != null) {
 
             int idade = Period.between(fornecedor.getDataNascimento(), LocalDate.now()).getYears();
 
-            if (!estadoEmpresa.permiteMenorIdade() && idade < 18) {
-                throw new BusinessException(
-                        String.format(
-                                "Empresas do estado %s (%s) não podem cadastrar fornecedor pessoa física menor de idade. Idade atual: %d anos.",
-                                estadoEmpresa.getNome(),
-                                estadoEmpresa.name(),
-                                idade
-                        )
-                );
+            if (idade < 18) {
+                throw new BusinessException("Empresas do Paraná não podem cadastrar fornecedores menores de idade. Idade atual: " + idade);
             }
         }
     }

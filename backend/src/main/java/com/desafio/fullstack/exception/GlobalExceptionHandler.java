@@ -54,10 +54,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneral(Exception ex) {
+        ex.printStackTrace();
+
         var error = new ErrorResponse(
-            HttpStatus.INTERNAL_SERVER_ERROR.value(),
-            "Erro interno do servidor: " + ex.getMessage(),
-            LocalDateTime.now()
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "Ocorreu um erro interno inesperado no servidor.",
+                LocalDateTime.now()
         );
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }

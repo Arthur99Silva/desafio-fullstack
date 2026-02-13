@@ -88,7 +88,6 @@ class EmpresaServiceTest {
     class CriarEmpresa {
 
         @Test
-        @DisplayName("Deve criar empresa com sucesso quando dados são válidos")
         void deveCriarEmpresaComSucesso() {
             when(empresaRepository.existsByCnpj(anyString())).thenReturn(false);
             when(cepService.consultarCep(anyString())).thenReturn(cepValido);
@@ -104,7 +103,6 @@ class EmpresaServiceTest {
         }
 
         @Test
-        @DisplayName("Deve lançar exceção quando CNPJ já está cadastrado")
         void deveLancarExcecaoQuandoCnpjDuplicado() {
             when(empresaRepository.existsByCnpj("12345678000199")).thenReturn(true);
 
@@ -118,7 +116,6 @@ class EmpresaServiceTest {
         }
 
         @Test
-        @DisplayName("Deve lançar exceção quando CEP é inválido")
         void deveLancarExcecaoQuandoCepInvalido() {
             when(empresaRepository.existsByCnpj(anyString())).thenReturn(false);
             when(cepService.consultarCep("80000000")).thenReturn(
@@ -135,7 +132,6 @@ class EmpresaServiceTest {
         }
 
         @Test
-        @DisplayName("Deve preencher dados de endereço a partir do CEP")
         void devePreencherEnderecoDoCep() {
             when(empresaRepository.existsByCnpj(anyString())).thenReturn(false);
             when(cepService.consultarCep(anyString())).thenReturn(cepValido);
@@ -160,7 +156,6 @@ class EmpresaServiceTest {
     class AtualizarEmpresa {
 
         @Test
-        @DisplayName("Deve atualizar empresa com sucesso")
         void deveAtualizarEmpresaComSucesso() {
             when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
             when(empresaRepository.existsByCnpjAndIdNot(anyString(), eq(1L))).thenReturn(false);
@@ -180,7 +175,6 @@ class EmpresaServiceTest {
         }
 
         @Test
-        @DisplayName("Deve lançar exceção quando empresa não existe")
         void deveLancarExcecaoQuandoEmpresaNaoExiste() {
             when(empresaRepository.findById(99L)).thenReturn(Optional.empty());
 
@@ -191,7 +185,6 @@ class EmpresaServiceTest {
         }
 
         @Test
-        @DisplayName("Deve lançar exceção quando CNPJ pertence a outra empresa")
         void deveLancarExcecaoQuandoCnpjDeOutraEmpresa() {
             when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
             when(empresaRepository.existsByCnpjAndIdNot("12345678000199", 1L)).thenReturn(true);
@@ -209,7 +202,6 @@ class EmpresaServiceTest {
     class BuscarEmpresa {
 
         @Test
-        @DisplayName("Deve buscar empresa por ID com sucesso")
         void deveBuscarPorIdComSucesso() {
             when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
 
@@ -221,7 +213,6 @@ class EmpresaServiceTest {
         }
 
         @Test
-        @DisplayName("Deve lançar exceção quando empresa não encontrada")
         void deveLancarExcecaoQuandoNaoEncontrada() {
             when(empresaRepository.findById(99L)).thenReturn(Optional.empty());
 
@@ -232,7 +223,6 @@ class EmpresaServiceTest {
         }
 
         @Test
-        @DisplayName("Deve listar empresas com paginação")
         void deveListarComPaginacao() {
             Pageable pageable = PageRequest.of(0, 10);
             Page<Empresa> page = new PageImpl<>(List.of(empresa), pageable, 1);
@@ -248,11 +238,9 @@ class EmpresaServiceTest {
 
     // EXCLUIR EMPRESA
     @Nested
-    @DisplayName("Excluir Empresa")
     class ExcluirEmpresa {
 
         @Test
-        @DisplayName("Deve excluir empresa com sucesso")
         void deveExcluirComSucesso() {
             when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
 
@@ -274,7 +262,6 @@ class EmpresaServiceTest {
 
     // VINCULAR / DESVINCULAR FORNECEDOR
     @Nested
-    @DisplayName("Vincular Fornecedor")
     class VincularFornecedor {
 
         private Fornecedor fornecedorMaior;
@@ -319,7 +306,6 @@ class EmpresaServiceTest {
         }
 
         @Test
-        @DisplayName("Deve vincular fornecedor maior de idade com sucesso")
         void deveVincularFornecedorMaiorComSucesso() {
             when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
             when(fornecedorRepository.findById(1L)).thenReturn(Optional.of(fornecedorMaior));
@@ -332,7 +318,6 @@ class EmpresaServiceTest {
         }
 
         @Test
-        @DisplayName("Deve BLOQUEAR fornecedor PF menor de idade em empresa do PARANÁ")
         void deveBloquearMenorDeIdadeNoParana() {
             when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa)); // UF = PR
             when(fornecedorRepository.findById(2L)).thenReturn(Optional.of(fornecedorMenor));
@@ -343,12 +328,11 @@ class EmpresaServiceTest {
             );
 
             assertTrue(ex.getMessage().contains("Paraná"));
-            assertTrue(ex.getMessage().contains("menor de idade"));
+            assertTrue(ex.getMessage().contains("menores de idade"));
             verify(empresaRepository, never()).save(any());
         }
 
         @Test
-        @DisplayName("Deve PERMITIR fornecedor PF menor de idade em empresa FORA do PR")
         void devePermitirMenorForaDoParana() {
             Empresa empresaSP = Empresa.builder()
                     .id(2L).cnpj("11111111000111").nomeFantasia("Empresa SP")
@@ -367,7 +351,6 @@ class EmpresaServiceTest {
         }
 
         @Test
-        @DisplayName("Deve PERMITIR fornecedor PJ em empresa do PR (regra só se aplica a PF)")
         void devePermitirPJNoParana() {
             when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa)); // UF = PR
             when(fornecedorRepository.findById(3L)).thenReturn(Optional.of(fornecedorPJ));
@@ -379,7 +362,6 @@ class EmpresaServiceTest {
         }
 
         @Test
-        @DisplayName("Deve lançar exceção quando empresa não encontrada ao vincular")
         void deveLancarExcecaoEmpresaNaoEncontrada() {
             when(empresaRepository.findById(99L)).thenReturn(Optional.empty());
 
@@ -390,7 +372,6 @@ class EmpresaServiceTest {
         }
 
         @Test
-        @DisplayName("Deve lançar exceção quando fornecedor não encontrado ao vincular")
         void deveLancarExcecaoFornecedorNaoEncontrado() {
             when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
             when(fornecedorRepository.findById(99L)).thenReturn(Optional.empty());
@@ -402,7 +383,6 @@ class EmpresaServiceTest {
         }
 
         @Test
-        @DisplayName("Deve desvincular fornecedor com sucesso")
         void deveDesvincularFornecedorComSucesso() {
             empresa.getFornecedores().add(fornecedorMaior);
 

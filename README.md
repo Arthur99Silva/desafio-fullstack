@@ -14,6 +14,7 @@
 [Git](https://git-scm.com), [Node.js](https://nodejs.org/en/) e o [Docker](https://www.docker.com/).
 
 ### Opção 1: Docker Compose
+Costuma demorar um pouco para carregar o banco de dados.
 ```bash
 docker-compose up --build
 ```
@@ -69,6 +70,8 @@ ng serve
 ---
 
 ## Testes
+
+Claude OPUS 4.6 na criação de testes unitários.
 
 ```bash
 cd backend
