@@ -6,7 +6,7 @@ import com.desafio.fullstack.dto.FornecedorDTO;
 import com.desafio.fullstack.dto.PageResponse;
 import com.desafio.fullstack.entity.Empresa;
 import com.desafio.fullstack.entity.Fornecedor;
-import com.desafio.fullstack.enums.Estado; // <--- NOVO IMPORT
+import com.desafio.fullstack.enums.Estado;
 import com.desafio.fullstack.enums.TipoPessoa;
 import com.desafio.fullstack.exception.BusinessException;
 import com.desafio.fullstack.exception.ResourceNotFoundException;

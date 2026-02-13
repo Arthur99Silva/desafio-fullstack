@@ -92,15 +92,11 @@ public class FornecedorService {
     @Transactional
     public void delete(Long id) {
         Fornecedor fornecedor = getFornecedorOrThrow(id);
-        // Remover vínculos com empresas antes de excluir
         fornecedor.getEmpresas().forEach(e -> e.getFornecedores().remove(fornecedor));
         fornecedorRepository.delete(fornecedor);
     }
 
-    // === Validações ===
-
     private void validarRequest(FornecedorDTO.Request request, Long idAtual) {
-        // CPF/CNPJ único
         if (idAtual == null && fornecedorRepository.existsByCpfCnpj(request.getCpfCnpj())) {
             throw new BusinessException("CPF/CNPJ já cadastrado: " + request.getCpfCnpj());
         }
@@ -108,7 +104,6 @@ public class FornecedorService {
             throw new BusinessException("CPF/CNPJ já cadastrado por outro fornecedor: " + request.getCpfCnpj());
         }
 
-        // Validar consistência tipo pessoa x documento
         if (request.getTipoPessoa() == TipoPessoa.FISICA) {
             if (request.getCpfCnpj().length() != 11) {
                 throw new BusinessException("Pessoa Física deve informar CPF com 11 dígitos");
@@ -126,7 +121,6 @@ public class FornecedorService {
         }
     }
 
-    // === Helpers ===
 
     private Fornecedor getFornecedorOrThrow(Long id) {
         return fornecedorRepository.findById(id)

@@ -2,8 +2,7 @@ import { Component, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
-import { finalize } from 'rxjs'; // <--- Importante para o loading state
-
+import { finalize } from 'rxjs';
 import { EmpresaService } from '../../../services/empresa.service';
 import { CepService } from '../../../services/cep.service';
 import { NotificationService } from '../../../services/notification.service';
@@ -16,21 +15,17 @@ import { EmpresaRequest, CepInfo } from '../../../models';
   templateUrl: './empresa-form.component.html',
 })
 export class EmpresaFormComponent implements OnInit {
-  // Acesso ao formulário para validação extra no TS
   @ViewChild('form') form!: NgForm;
 
   empresa: EmpresaRequest = { cnpj: '', nomeFantasia: '', cep: '' };
-  
-  // Controles de Estado
+
   isEdit = false;
   editId: number | null = null;
-  submitting = false; // Controla o loading do botão Salvar
-
-  // Controles de CEP
+  submitting = false;
   cepInfo: CepInfo | null = null;
   cepError = '';
   cepValidado = false;
-  consultandoCep = false; // Controla o loading do botão Validar CEP
+  consultandoCep = false;
 
   constructor(
     private empresaService: EmpresaService,
@@ -38,7 +33,7 @@ export class EmpresaFormComponent implements OnInit {
     private notification: NotificationService,
     private router: Router,
     private route: ActivatedRoute
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
@@ -57,7 +52,6 @@ export class EmpresaFormComponent implements OnInit {
           nomeFantasia: data.nomeFantasia,
           cep: data.cep,
         };
-        // Se já tem dados de endereço, preenche visualmente
         if (data.uf) {
           this.cepInfo = {
             cep: data.cep,
@@ -86,7 +80,7 @@ export class EmpresaFormComponent implements OnInit {
     this.cepValidado = false;
 
     this.cepService.consultar(this.empresa.cep)
-      .pipe(finalize(() => this.consultandoCep = false)) // Garante destravamento
+      .pipe(finalize(() => this.consultandoCep = false))
       .subscribe({
         next: (info) => {
           if (info.valido) {
@@ -103,7 +97,6 @@ export class EmpresaFormComponent implements OnInit {
   }
 
   onSubmit(): void {
-    // Validação de segurança
     if (this.form.invalid) {
       this.notification.warning('Preencha todos os campos obrigatórios');
       return;
@@ -114,7 +107,7 @@ export class EmpresaFormComponent implements OnInit {
       return;
     }
 
-    this.submitting = true; // Bloqueia o botão
+    this.submitting = true;
 
     const request$ = this.isEdit
       ? this.empresaService.update(this.editId!, this.empresa)
@@ -122,7 +115,7 @@ export class EmpresaFormComponent implements OnInit {
 
     request$
       .pipe(
-        finalize(() => this.submitting = false) // <--- O segredo do Senior: Desbloqueia SEMPRE
+        finalize(() => this.submitting = false)
       )
       .subscribe({
         next: () => {

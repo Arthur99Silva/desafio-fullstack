@@ -25,10 +25,6 @@ public class CepService {
         this.objectMapper = new ObjectMapper();
     }
 
-    /**
-     * Consulta e valida CEP via API externa (ViaCEP como fallback do cep.la).
-     * Retorna dados do endereço se válido.
-     */
     public CepDTO consultarCep(String cep) {
         String cepLimpo = cep.replaceAll("\\D", "");
 
@@ -41,16 +37,13 @@ public class CepService {
         }
 
         try {
-            // Tenta cep.la primeiro
             CepDTO resultado = consultarCepLa(cepLimpo);
             if (resultado.isValido()) {
                 return resultado;
             }
 
-            // Fallback para ViaCEP
             return consultarViaCep(cepLimpo);
         } catch (Exception e) {
-            // Se ambas APIs falharem, tenta ViaCEP como última tentativa
             try {
                 return consultarViaCep(cepLimpo);
             } catch (Exception ex) {
